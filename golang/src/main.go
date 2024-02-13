@@ -23,6 +23,8 @@ type OnlineUser struct {
 	Time        []string     `json:"time"`
 }
 
+var layout = "2006-01-02 15:04:05"
+
 func open(path string, count uint) *sql.DB {
 	db, err := sql.Open("mysql", path)
 	if err != nil {
@@ -46,6 +48,12 @@ func connectDB() *sql.DB {
 		os.Getenv("MYSQL_DATABASE"))
 
 	return open(path, 100)
+}
+
+// 文字列をtime型に変換
+func stringToTime(str string) time.Time {
+	t, _ := time.Parse(layout, str)
+	return t
 }
 
 func main() {
@@ -84,26 +92,23 @@ func main() {
 		c.BindJSON(&requestJSON)
 		fmt.Println(requestJSON)
 		player_names := requestJSON.PlayerNames
-		time := requestJSON.Time
+		time := stringToTime(requestJSON.Time[0]) //time型に変換
 
 		// オンラインユーザ一覧のプレイヤーIDを取得
-		playerIDs := player.FindPlayerIDs(db, player_names)
+		playerIDs := player.FindPlayerIDs(db, player_names) //player_namesが構造体の配列のためエラー
 
 		// 過去のオンラインユーザを検索
 		oldStayers := history.FindOldStayer(db)
 
-		オンラインユーザ一覧のプレイヤーIDを登録または更新
+		//オンラインユーザ一覧のプレイヤーIDを登録または更新
 		if oldStayers != nil {
 			var oldStayerID int
 			none := oldStayers.Scan(&oldStayerID)
 			if none != nil {
-				history.AddHistory(db, playerID, time)
+				// history.AddHistory(db, playerIDs, time)
 			}
-			history.UpdateEndTime(db, oldStayerID, time)
+			// history.UpdateEndTime(db, oldStayerID, time)
 		}
-
-		fmt.Println(player_name)
-		fmt.Println(time)
 	})
 
 	r.Run()
